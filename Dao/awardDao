@@ -1,0 +1,208 @@
+package com.springapp.mvc.dao;
+
+import com.springapp.mvc.beans.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.simple.ParameterizedRowMapper;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+
+/**
+ * Created by Jui on 24/4/2017.
+ */
+public class awardDao {
+
+
+    @Autowired
+    JdbcTemplate template;
+    public void setTemplate(JdbcTemplate template) {
+        this.template = template;
+    }
+
+    protected static final class awMapper implements ParameterizedRowMapper
+    {
+        public awardTable mapRow(ResultSet rs, int rowNum)
+                throws SQLException
+        {
+            awardTable a = new awardTable();
+            a.setName((rs.getString(1)));
+            a.setDob(rs.getString(2));
+            return a;
+        }
+    }
+
+    public List<awardTable> getNames(String a_name,String year){
+        String sql ="select * from awards where UPPER (a_name) =UPPER (?) and a_year =? ";
+        return template.query(sql, new awMapper(), new Object[]{a_name,year} );
+    }
+
+    public List<awardTable> getNamesbyaward(String a_name){
+        String sql ="select * from awards where UPPER (a_name) =UPPER (?)";
+        return template.query(sql, new awMapper(), new Object[]{a_name} );
+    }
+    protected static final class nMapper implements ParameterizedRowMapper
+    {
+        public String mapRow(ResultSet rs, int rowNum)
+                throws SQLException
+        {
+            return rs.getString("name");
+        }
+    }
+    public List<String> getnamebyInsW (String ins){
+        String sql = "select name from scientists where UPPER (institution) = UPPER (?)";
+        return template.query(sql, new nMapper(), new Object[]{ins} );
+    }
+    public List<String> getnamebyInsP (String ins,String deg){
+        String sql = "select name from alma_mater where UPPER (a_institution) = UPPER (?) AND degree = ?";
+        return template.query(sql, new nMapper(), new Object[]{ins,deg} );
+    }
+    public List<String> getnamebyInsbm (String ins,String deg1,String deg2){
+        String sql = "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) ";
+        return template.query(sql, new nMapper(), new Object[]{ins,deg1,ins,deg2} );
+    }
+    public List<String> getnamebyInsWP (String ins,String deg1){
+        String sql = "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from scientists where UPPER (institution) = UPPER (?)";
+        return template.query(sql, new nMapper(), new Object[]{ins,deg1,ins} );
+    }
+
+    public List<String> getnamebyInsbPm (String ins,String deg1,String deg2,String deg3){
+        String sql = "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?)";
+        return template.query(sql, new nMapper(), new Object[]{ins,deg1,ins,deg2,ins,deg3} );
+    }
+    public List<String> getnamebyInsWPm (String ins,String deg1,String deg2){
+        String sql = "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from scientists where UPPER (institution) = UPPER (?)";
+        return template.query(sql, new nMapper(), new Object[]{ins,deg1,ins,deg2,ins} );
+    }
+    public List<String> getnamebyInsAll (String ins,String deg1,String deg2,String deg3){
+        String sql = "select name from scientists where UPPER (institution) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) \n" +
+                "INTERSECT\n" +
+                "select name from alma_mater where UPPER (a_institution) = UPPER (?) and UPPER (degree) = UPPER (?) ";
+        return template.query(sql, new nMapper(), new Object[]{ins,ins,deg1,ins,deg2,ins,deg3} );
+    }
+    public List<String> getnamebyNation (String nation){
+        String sql = "select name from scientists where upper (nationality) = UPPER (?)";
+        return template.query(sql, new nMapper(), new Object[]{nation} );
+    }
+
+    public List<String> getnamebyThesis (String thesis){
+        String sql = "select name from scientists where upper (thesis) like UPPER (?)";
+        return template.query(sql, new nMapper(), new Object[]{"%"+thesis+"%"} );
+    }
+
+
+
+
+
+
+
+
+
+
+
+    //***************************Account related query****************************************************//
+
+    public int createAccount(Accountinfo p){
+        String sql="insert into Accounts(fname,lname,email,uname,password) values('"+p.getFname()+"','"+p.getLname()+"','"+p.getEmail()+"','"+p.getUname()+"','"+p.getPassword()+"')";
+        return template.update(sql);
+    }
+
+
+    protected static final class fMapper implements ParameterizedRowMapper
+    {
+        public String mapRow(ResultSet rs, int rowNum)
+                throws SQLException
+        {
+            return rs.getString("fname");
+        }
+    }
+
+    public boolean existUser(String username,String password)
+    {
+        String sql ="select fname from Accounts where uname=? and password =?";
+        List<String> n= template.query(sql, new fMapper(), new Object[]{username,password} );
+        if(n.isEmpty()) return false;
+        else return true;
+    }
+
+
+    public int postMessage(String uname,String ques, String date,String time){
+        String sql="insert into Messages(id,sender,message,date1,time) values(Mes_seq.NEXTVAL,'"+uname+"','"+ques+"','"+date+"','"+time+"')";
+        return template.update(sql);
+    }
+
+
+    protected static final class mesMapper implements ParameterizedRowMapper
+    {
+        public Message mapRow(ResultSet rs, int rowNum)
+                throws SQLException
+        {
+            Message m = new Message();
+            m.setId((rs.getInt(1)));
+           m.setSender((rs.getString(2)));
+            m.setMessage((rs.getString(3)));
+            m.setDate((rs.getString(4)));
+            m.setTime((rs.getString(5)));
+            return m;
+        }
+    }
+    public List<Message> getMessage (){
+        String sql = "select * from Messages order by id desc";
+        return template.query(sql, new mesMapper());
+    }
+
+
+    public int postAnswer(int mes_id,String uname,String ans, String date,String time){
+        String sql="insert into Answers(a_id,id,answerer,answer,date1,time) values(Ans_seq.NEXTVAL,"+mes_id+",'"+uname+"','"+ans+"','"+date+"','"+time+"')";
+        return template.update(sql);
+    }
+
+    protected static final class ansMapper implements ParameterizedRowMapper
+    {
+        public Answer mapRow(ResultSet rs, int rowNum)
+                throws SQLException
+        {
+            Answer m = new Answer();
+            m.setAnswerer((rs.getString(1)));
+            m.setAnswer((rs.getString(2)));
+            m.setDate((rs.getString(3)));
+            m.setTime((rs.getString(4)));
+            return m;
+        }
+    }
+    public List<Answer> getAnswer (int mes_id){
+        String sql = "select a.answerer,a.ANSWER,a.date1,a.time  from ANSWERS a,MESSAGES m where a.id=m.id and m.id=? order by a_id desc";
+        return template.query(sql, new ansMapper(), new Object[]{mes_id} );
+    }
+
+
+
+
+
+
+
+
+
+
+}
